@@ -1,4 +1,4 @@
-// tela1.js - Tela de Boas-Vindas
+// src/app/screens/tela1.tsx - Tela 1: Boas-Vindas
 import React from 'react';
 import {
   StyleSheet,
@@ -8,9 +8,10 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
-export default function Tela1({ navigation }) {
+export default function Tela1Screen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -89,12 +90,12 @@ export default function Tela1({ navigation }) {
           </View>
         </View>
 
-        {/* Menu de Ações Principais */}
+        {/* Menu de Ações Principais com Expo Router */}
         <View style={styles.menuContainer}>
           <TouchableOpacity
             style={styles.btnPrimary}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('Tela3')}
+            onPress={() => router.push('/screens/tela3')}
           >
             <View style={styles.btnIconWrapper}>
               <Ionicons name="play" size={22} color="#ffffff" />
@@ -109,7 +110,7 @@ export default function Tela1({ navigation }) {
           <TouchableOpacity
             style={styles.btnSecondary}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('Tela2')}
+            onPress={() => router.push('/screens/tela2')}
           >
             <Ionicons name="book-outline" size={20} color="#38bdf8" style={styles.btnSecondaryIcon} />
             <Text style={styles.btnSecondaryText}>Instruções e Regras</Text>
@@ -119,7 +120,7 @@ export default function Tela1({ navigation }) {
           <TouchableOpacity
             style={styles.btnSecondary}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('Tela4')}
+            onPress={() => router.push('/screens/tela4')}
           >
             <Ionicons name="information-circle-outline" size={20} color="#a855f7" style={styles.btnSecondaryIcon} />
             <Text style={styles.btnSecondaryText}>Créditos do Projeto</Text>
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 48,
     paddingBottom: 30,
     alignItems: 'center',
   },

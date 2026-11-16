@@ -1,35 +1,37 @@
+// src/utils/soundManager.ts - Gerenciador de efeitos sonoros e vibração
 import { Platform, Vibration } from 'react-native';
 
 class SoundManager {
+  private muted: boolean = false;
+  private audioCtx: any = null;
+
   constructor() {
-    this.muted = false;
-    this.audioCtx = null;
     this.initAudioContext();
   }
 
-  initAudioContext() {
+  private initAudioContext() {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx) {
           this.audioCtx = new AudioCtx();
         }
-      } catch (e) {
-        // AudioContext not available or blocked
+      } catch {
+        // AudioContext indisponível ou bloqueado
       }
     }
   }
 
-  toggleMute() {
+  public toggleMute(): boolean {
     this.muted = !this.muted;
     return this.muted;
   }
 
-  isMuted() {
+  public isMuted(): boolean {
     return this.muted;
   }
 
-  playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+  public playTone(freq: number, type: OscillatorType = 'sine', duration: number = 0.1, gainVal: number = 0.15) {
     if (this.muted) return;
 
     if (Platform.OS === 'web' && this.audioCtx) {
@@ -51,21 +53,23 @@ class SoundManager {
 
         osc.start();
         osc.stop(this.audioCtx.currentTime + duration);
-      } catch (e) {
-        // fallback
+      } catch {
+        // Fallback
       }
     }
   }
 
-  playMove() {
+  public playMove() {
     if (this.muted) return;
     this.playTone(380, 'triangle', 0.08, 0.2);
     try {
       Vibration.vibrate(15);
-    } catch (e) {}
+    } catch {
+      // Ignora erro de vibração
+    }
   }
 
-  playCapture() {
+  public playCapture() {
     if (this.muted) return;
     this.playTone(220, 'square', 0.12, 0.25);
     setTimeout(() => {
@@ -73,12 +77,14 @@ class SoundManager {
     }, 70);
     try {
       Vibration.vibrate([0, 30, 40, 30]);
-    } catch (e) {}
+    } catch {
+      // Ignora erro de vibração
+    }
   }
 
-  playKing() {
+  public playKing() {
     if (this.muted) return;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, idx) => {
       setTimeout(() => {
         this.playTone(freq, 'sine', 0.16, 0.2);
@@ -86,10 +92,12 @@ class SoundManager {
     });
     try {
       Vibration.vibrate([0, 40, 40, 60]);
-    } catch (e) {}
+    } catch {
+      // Ignora erro de vibração
+    }
   }
 
-  playWin() {
+  public playWin() {
     if (this.muted) return;
     const notes = [440, 554.37, 659.25, 880];
     notes.forEach((freq, idx) => {
@@ -99,10 +107,12 @@ class SoundManager {
     });
     try {
       Vibration.vibrate([0, 80, 50, 80, 50, 150]);
-    } catch (e) {}
+    } catch {
+      // Ignora erro de vibração
+    }
   }
 
-  playClick() {
+  public playClick() {
     if (this.muted) return;
     this.playTone(600, 'sine', 0.04, 0.08);
   }

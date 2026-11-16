@@ -1,43 +1,73 @@
-// regrasDama.js - Lógica completa das regras do Jogo de Dama (Regra Brasileira/Internacional)
+// src/utils/regrasDama.ts - Lógica das regras do Jogo de Dama (Regra Brasileira/Internacional)
 
 export const BOARD_SIZE = 8;
 
-export const PLAYER_1 = 'p1'; // Jogador 1 (Geralmente peças claras/inferior)
-export const PLAYER_2 = 'p2'; // Jogador 2 (Geralmente peças escuras/superior)
+export type Player = 'p1' | 'p2';
+export type PieceType = 'p1' | 'p2' | 'd1' | 'd2' | null;
 
-export const PIECE_P1 = 'p1';
-export const PIECE_P2 = 'p2';
-export const KING_P1 = 'd1';
-export const KING_P2 = 'd2';
+export const PLAYER_1: Player = 'p1';
+export const PLAYER_2: Player = 'p2';
 
-export function isPlayableSquare(row, col) {
+export const PIECE_P1: PieceType = 'p1';
+export const PIECE_P2: PieceType = 'p2';
+export const KING_P1: PieceType = 'd1';
+export const KING_P2: PieceType = 'd2';
+
+export interface Position {
+  r: number;
+  c: number;
+}
+
+export interface Move {
+  from: Position;
+  to: Position;
+  captured?: Position;
+  isCapture: boolean;
+}
+
+export interface MoveResult {
+  newBoard: PieceType[][];
+  becameKing: boolean;
+  capturedPiece: PieceType;
+}
+
+export interface PieceCounts {
+  p1Total: number;
+  p2Total: number;
+  p1Kings: number;
+  p2Kings: number;
+  p1Captured: number;
+  p2Captured: number;
+}
+
+export function isPlayableSquare(row: number, col: number): boolean {
   return (row + col) % 2 === 1;
 }
 
-export function isPlayer1(piece) {
+export function isPlayer1(piece: PieceType): boolean {
   return piece === PIECE_P1 || piece === KING_P1;
 }
 
-export function isPlayer2(piece) {
+export function isPlayer2(piece: PieceType): boolean {
   return piece === PIECE_P2 || piece === KING_P2;
 }
 
-export function isSamePlayer(pieceA, pieceB) {
+export function isSamePlayer(pieceA: PieceType, pieceB: PieceType): boolean {
   if (!pieceA || !pieceB) return false;
   return (isPlayer1(pieceA) && isPlayer1(pieceB)) || (isPlayer2(pieceA) && isPlayer2(pieceB));
 }
 
-export function isOpponent(pieceA, pieceB) {
+export function isOpponent(pieceA: PieceType, pieceB: PieceType): boolean {
   if (!pieceA || !pieceB) return false;
   return (isPlayer1(pieceA) && isPlayer2(pieceB)) || (isPlayer2(pieceA) && isPlayer1(pieceB));
 }
 
-export function isKing(piece) {
+export function isKing(piece: PieceType): boolean {
   return piece === KING_P1 || piece === KING_P2;
 }
 
-export function createInitialBoard() {
-  const board = Array(BOARD_SIZE)
+export function createInitialBoard(): PieceType[][] {
+  const board: PieceType[][] = Array(BOARD_SIZE)
     .fill(null)
     .map(() => Array(BOARD_SIZE).fill(null));
 
@@ -56,11 +86,11 @@ export function createInitialBoard() {
 }
 
 // Retorna todas as capturas possíveis a partir de (r, c)
-export function getCapturesForPiece(board, r, c) {
+export function getCapturesForPiece(board: PieceType[][], r: number, c: number): Move[] {
   const piece = board[r][c];
   if (!piece) return [];
 
-  const captures = [];
+  const captures: Move[] = [];
   const directions = [
     [-1, -1],
     [-1, 1],
@@ -69,7 +99,7 @@ export function getCapturesForPiece(board, r, c) {
   ];
 
   if (!isKing(piece)) {
-    // Peça comum: pode capturar para frente e para trás saltando 1 casa adversária
+    // Peça comum: pode capturar para frente e para trás saltando 1 peça adversária
     for (const [dr, dc] of directions) {
       const midR = r + dr;
       const midC = c + dc;
@@ -91,10 +121,10 @@ export function getCapturesForPiece(board, r, c) {
       }
     }
   } else {
-    // Dama: voa na diagonal. Procura na diagonal até achar uma peça adversária e casas vazias após ela
+    // Dama: voa na diagonal
     for (const [dr, dc] of directions) {
       let step = 1;
-      let opponentFound = null;
+      let opponentFound: Position | null = null;
 
       while (true) {
         const curR = r + step * dr;
@@ -108,22 +138,17 @@ export function getCapturesForPiece(board, r, c) {
 
         if (!opponentFound) {
           if (curPiece === null) {
-            // Casa livre antes do oponente, continua procurando
             step++;
             continue;
           } else if (isSamePlayer(piece, curPiece)) {
-            // Peça da mesma cor bloqueia a linha
             break;
           } else {
-            // Encontrou peça adversária
             opponentFound = { r: curR, c: curC };
             step++;
             continue;
           }
         } else {
-          // Já encontramos uma peça adversária na diagonal
           if (curPiece === null) {
-            // Casa livre após o oponente: pouso válido!
             captures.push({
               from: { r, c },
               to: { r: curR, c: curC },
@@ -132,7 +157,6 @@ export function getCapturesForPiece(board, r, c) {
             });
             step++;
           } else {
-            // Qualquer outra peça encontrada após a primeira bloqueia futuros saltos
             break;
           }
         }
@@ -144,11 +168,11 @@ export function getCapturesForPiece(board, r, c) {
 }
 
 // Retorna todos os movimentos simples (não capturas) a partir de (r, c)
-export function getSimpleMovesForPiece(board, r, c) {
+export function getSimpleMovesForPiece(board: PieceType[][], r: number, c: number): Move[] {
   const piece = board[r][c];
   if (!piece) return [];
 
-  const moves = [];
+  const moves: Move[] = [];
 
   if (!isKing(piece)) {
     // Peça comum: move 1 casa diagonal para frente
@@ -196,7 +220,7 @@ export function getSimpleMovesForPiece(board, r, c) {
           });
           step++;
         } else {
-          break; // bloqueado por outra peça
+          break;
         }
       }
     }
@@ -205,9 +229,9 @@ export function getSimpleMovesForPiece(board, r, c) {
   return moves;
 }
 
-// Retorna todas as capturas possíveis para o jogador atual em todo o tabuleiro
-export function getAllCapturesForPlayer(board, player) {
-  const captures = [];
+// Retorna todas as capturas possíveis para o jogador atual
+export function getAllCapturesForPlayer(board: PieceType[][], player: Player): Move[] {
+  const captures: Move[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const piece = board[r][c];
@@ -221,44 +245,44 @@ export function getAllCapturesForPlayer(board, player) {
 }
 
 // Retorna todos os movimentos válidos para uma peça específica
-export function getValidMovesForPiece(board, r, c, activePlayer, forcedPiece = null) {
+export function getValidMovesForPiece(
+  board: PieceType[][],
+  r: number,
+  c: number,
+  activePlayer: Player,
+  forcedPiece: Position | null = null
+): Move[] {
   const piece = board[r][c];
   if (!piece) return [];
 
-  // Se uma peça específica está forçada (em captura contínua)
   if (forcedPiece && (forcedPiece.r !== r || forcedPiece.c !== c)) {
     return [];
   }
 
-  const pieceOwner = isPlayer1(piece) ? PLAYER_1 : PLAYER_2;
+  const pieceOwner: Player = isPlayer1(piece) ? PLAYER_1 : PLAYER_2;
   if (pieceOwner !== activePlayer) return [];
 
-  // Verifica se há alguma captura obrigatória para o jogador
   const allCaptures = getAllCapturesForPlayer(board, activePlayer);
 
   if (allCaptures.length > 0) {
-    // Apenas capturas são permitidas!
     return getCapturesForPiece(board, r, c);
   }
 
-  // Se não há capturas no tabuleiro, movimentos simples são permitidos
   return getSimpleMovesForPiece(board, r, c);
 }
 
 // Executa um movimento e retorna o novo estado
-export function executeMove(board, move) {
+export function executeMove(board: PieceType[][], move: Move): MoveResult {
   const newBoard = board.map(row => [...row]);
   const { from, to, captured } = move;
 
   let piece = newBoard[from.r][from.c];
   newBoard[from.r][from.c] = null;
 
-  // Se capturou alguém, remove do tabuleiro
   if (captured) {
     newBoard[captured.r][captured.c] = null;
   }
 
-  // Verifica coroação para Dama
   let becameKing = false;
   if (piece === PIECE_P1 && to.r === 0) {
     piece = KING_P1;
@@ -278,7 +302,7 @@ export function executeMove(board, move) {
 }
 
 // Conta o total de peças de cada jogador
-export function countPieces(board) {
+export function countPieces(board: PieceType[][]): PieceCounts {
   let p1 = 0;
   let p2 = 0;
   let d1 = 0;
@@ -305,7 +329,7 @@ export function countPieces(board) {
 }
 
 // Verifica se o jogador possui algum movimento válido disponível
-export function hasAnyValidMoves(board, player) {
+export function hasAnyValidMoves(board: PieceType[][], player: Player): boolean {
   const captures = getAllCapturesForPlayer(board, player);
   if (captures.length > 0) return true;
 

@@ -1,4 +1,4 @@
-// tela2.js - Tela de Instruções do Jogo
+// src/app/screens/tela2.tsx - Tela 2: Instruções do Jogo
 import React from 'react';
 import {
   StyleSheet,
@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
-export default function Tela2({ navigation }) {
+export default function Tela2Screen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -39,7 +40,7 @@ export default function Tela2({ navigation }) {
           </Text>
         </View>
 
-        {/* Card 2: Movimentação Comum */}
+        {/* Card 2: Movimentação Básica */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={[styles.badgeIcon, { backgroundColor: '#10b981' }]}>
@@ -54,7 +55,7 @@ export default function Tela2({ navigation }) {
           </Text>
         </View>
 
-        {/* Card 3: Capturas Simples e em Cadeia */}
+        {/* Card 3: Captura e Saltos Múltiplos */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={[styles.badgeIcon, { backgroundColor: '#ef4444' }]}>
@@ -85,7 +86,7 @@ export default function Tela2({ navigation }) {
           </Text>
         </View>
 
-        {/* Card 5: Recursos Extras */}
+        {/* Card 5: Recursos do App */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={[styles.badgeIcon, { backgroundColor: '#8b5cf6' }]}>
@@ -105,7 +106,7 @@ export default function Tela2({ navigation }) {
         <TouchableOpacity
           style={styles.btnStart}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('Tela3')}
+          onPress={() => router.push('/screens/tela3')}
         >
           <Ionicons name="game-controller" size={22} color="#ffffff" style={styles.btnStartIcon} />
           <Text style={styles.btnStartText}>ENTENDI, IR PARA O JOGO!</Text>
@@ -114,10 +115,10 @@ export default function Tela2({ navigation }) {
         <TouchableOpacity
           style={styles.btnBack}
           activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={18} color="#94a3b8" />
-          <Text style={styles.btnBackText}>Voltar ao Menu Principal</Text>
+          <Text style={styles.btnBackText}>Voltar</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

@@ -1,4 +1,4 @@
-// tela4.js - Tela de Créditos do Jogo
+// src/app/screens/tela4.tsx - Tela 4: Créditos do Jogo
 import React from 'react';
 import {
   StyleSheet,
@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Tela4({ navigation }) {
+export default function Tela4Screen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -31,7 +32,7 @@ export default function Tela4({ navigation }) {
             <Text style={styles.mandatoryCardTitle}>AVISO ACADÊMICO OBRIGATÓRIO</Text>
           </View>
           <Text style={styles.mandatoryQuote}>
-            "Este site é um projeto acadêmico da FATEC, criado apenas para fins de estudo. Não utilize as informações aqui para uso real."
+            &quot;Este site é um projeto acadêmico da FATEC, criado apenas para fins de estudo. Não utilize as informações aqui para uso real.&quot;
           </Text>
         </View>
 
@@ -117,10 +118,10 @@ export default function Tela4({ navigation }) {
               <Text style={styles.techBadgeText}>Expo SDK 55</Text>
             </View>
             <View style={styles.techBadge}>
-              <Text style={styles.techBadgeText}>React Navigation Stack</Text>
+              <Text style={styles.techBadgeText}>Expo Router (app/screens)</Text>
             </View>
             <View style={styles.techBadge}>
-              <Text style={styles.techBadgeText}>SnackExpoDev Ready</Text>
+              <Text style={styles.techBadgeText}>React Navigation Stack</Text>
             </View>
             <View style={styles.techBadge}>
               <Text style={styles.techBadgeText}>Vector Icons</Text>
@@ -136,7 +137,7 @@ export default function Tela4({ navigation }) {
           <TouchableOpacity
             style={styles.btnPlay}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('Tela3')}
+            onPress={() => router.push('/screens/tela3')}
           >
             <Ionicons name="play" size={20} color="#ffffff" style={{ marginRight: 8 }} />
             <Text style={styles.btnPlayText}>IR PARA O JOGO DE DAMA</Text>
@@ -145,7 +146,7 @@ export default function Tela4({ navigation }) {
           <TouchableOpacity
             style={styles.btnHome}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('Tela1')}
+            onPress={() => router.push('/screens/tela1')}
           >
             <Ionicons name="home-outline" size={18} color="#94a3b8" style={{ marginRight: 6 }} />
             <Text style={styles.btnHomeText}>Voltar à Página Inicial</Text>

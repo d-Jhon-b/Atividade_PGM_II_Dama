@@ -1,5 +1,5 @@
-// tela3.js - O Jogo de Dama
-import React, { useState, useEffect, useRef } from 'react';
+// src/app/screens/tela3.tsx - Tela 3: O Jogo de Dama
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,16 +11,17 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 import {
   BOARD_SIZE,
   PLAYER_1,
   PLAYER_2,
-  PIECE_P1,
-  PIECE_P2,
-  KING_P1,
-  KING_P2,
+  Player,
+  PieceType,
+  Position,
+  Move,
   isPlayableSquare,
   isPlayer1,
   isPlayer2,
@@ -32,46 +33,46 @@ import {
   executeMove,
   countPieces,
   hasAnyValidMoves,
-} from './regrasDama';
+} from '@/utils/regrasDama';
 
-import { TEMAS } from './temas';
-import soundManager from './soundManager';
+import { TEMAS } from '@/constants/temas';
+import { soundManager } from '@/utils/soundManager';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BOARD_CONTAINER_PADDING = 16;
 const BOARD_WIDTH = Math.min(SCREEN_WIDTH - BOARD_CONTAINER_PADDING * 2, 380);
 const SQUARE_SIZE = Math.floor(BOARD_WIDTH / BOARD_SIZE);
 
-export default function Tela3({ navigation }) {
+export default function Tela3Screen() {
   // Estado do jogo
-  const [board, setBoard] = useState(createInitialBoard);
-  const [activePlayer, setActivePlayer] = useState(PLAYER_1);
-  const [selectedSquare, setSelectedSquare] = useState(null); // { r, c }
-  const [validMoves, setValidMoves] = useState([]);
-  const [forcedPiece, setForcedPiece] = useState(null); // { r, c } durante capturas em cadeia
-  const [moveCount, setMoveCount] = useState(0);
+  const [board, setBoard] = useState<PieceType[][]>(createInitialBoard);
+  const [activePlayer, setActivePlayer] = useState<Player>(PLAYER_1);
+  const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
+  const [validMoves, setValidMoves] = useState<Move[]>([]);
+  const [forcedPiece, setForcedPiece] = useState<Position | null>(null);
+  const [moveCount, setMoveCount] = useState<number>(0);
 
   // Tema de cores
-  const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
-  const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [selectedThemeIndex, setSelectedThemeIndex] = useState<number>(0);
+  const [themeModalVisible, setThemeModalVisible] = useState<boolean>(false);
   const currentTheme = TEMAS[selectedThemeIndex];
 
   // Som & Cronômetro
-  const [isMuted, setIsMuted] = useState(false);
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
-  const [timerRunning, setTimerRunning] = useState(true);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
+  const [timerRunning, setTimerRunning] = useState<boolean>(true);
 
   // Fim de jogo
-  const [winnerModalVisible, setWinnerModalVisible] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [winReason, setWinReason] = useState('');
+  const [winnerModalVisible, setWinnerModalVisible] = useState<boolean>(false);
+  const [winner, setWinner] = useState<Player | null>(null);
+  const [winReason, setWinReason] = useState<string>('');
 
   // Contador de peças
   const pieceCounts = countPieces(board);
 
   // Timer Effect
   useEffect(() => {
-    let interval = null;
+    let interval: any = null;
     if (timerRunning) {
       interval = setInterval(() => {
         setSecondsElapsed(prev => prev + 1);
@@ -80,20 +81,17 @@ export default function Tela3({ navigation }) {
     return () => clearInterval(interval);
   }, [timerRunning]);
 
-  // Formata os segundos em MM:SS
-  const formatTime = seconds => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Alterna o som
   const handleToggleMute = () => {
     const muted = soundManager.toggleMute();
     setIsMuted(muted);
   };
 
-  // Reinicia a partida
   const resetGame = () => {
     setBoard(createInitialBoard());
     setActivePlayer(PLAYER_1);
@@ -120,29 +118,22 @@ export default function Tela3({ navigation }) {
     );
   };
 
-  // Toque em uma casa do tabuleiro
-  const handleSquarePress = (r, c) => {
+  const handleSquarePress = (r: number, c: number) => {
     if (winner) return;
 
     const clickedPiece = board[r][c];
-
-    // Se já havia uma casa selecionada e o usuário clicou em um movimento válido
     const targetMove = validMoves.find(m => m.to.r === r && m.to.c === c);
 
     if (targetMove && selectedSquare) {
-      // Executa o movimento
-      const { newBoard, becameKing, capturedPiece } = executeMove(board, targetMove);
+      const { newBoard, becameKing } = executeMove(board, targetMove);
       setBoard(newBoard);
       setMoveCount(prev => prev + 1);
 
       if (targetMove.isCapture) {
         soundManager.playCapture();
 
-        // Verifica se há novas capturas obrigatórias a partir da nova casa da MESMA peça
         const nextCaptures = getCapturesForPiece(newBoard, r, c);
-
         if (nextCaptures.length > 0) {
-          // Captura em cadeia! Permanece no mesmo turno e obriga a mesma peça a capturar
           setForcedPiece({ r, c });
           setSelectedSquare({ r, c });
           setValidMoves(nextCaptures);
@@ -156,27 +147,23 @@ export default function Tela3({ navigation }) {
         soundManager.playKing();
       }
 
-      // Fim do turno: limpa seleções e troca de jogador
       setSelectedSquare(null);
       setValidMoves([]);
       setForcedPiece(null);
 
-      const nextPlayer = activePlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
+      const nextPlayer: Player = activePlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
       setActivePlayer(nextPlayer);
 
-      // Checa condição de vitória
       checkGameOver(newBoard, nextPlayer);
       return;
     }
 
-    // Se uma peça está forçada (em cadeia de captura), não permite selecionar outra
     if (forcedPiece) {
       if (r !== forcedPiece.r || c !== forcedPiece.c) {
         return;
       }
     }
 
-    // Se clicou em uma peça do jogador atual
     if (
       clickedPiece &&
       ((activePlayer === PLAYER_1 && isPlayer1(clickedPiece)) ||
@@ -187,7 +174,6 @@ export default function Tela3({ navigation }) {
       const moves = getValidMovesForPiece(board, r, c, activePlayer, forcedPiece);
       setValidMoves(moves);
     } else {
-      // Clicou em casa vazia ou adversária que não seja alvo válido
       if (!forcedPiece) {
         setSelectedSquare(null);
         setValidMoves([]);
@@ -195,8 +181,7 @@ export default function Tela3({ navigation }) {
     }
   };
 
-  // Verifica vitória
-  const checkGameOver = (currentBoard, nextPlayer) => {
+  const checkGameOver = (currentBoard: PieceType[][], nextPlayer: Player) => {
     const counts = countPieces(currentBoard);
 
     if (nextPlayer === PLAYER_1 && counts.p1Total === 0) {
@@ -208,9 +193,8 @@ export default function Tela3({ navigation }) {
       return;
     }
 
-    // Verifica se o próximo jogador tem movimentos válidos
     if (!hasAnyValidMoves(currentBoard, nextPlayer)) {
-      const winningPlayer = nextPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
+      const winningPlayer: Player = nextPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
       handleGameOver(
         winningPlayer,
         `O Jogador ${nextPlayer === PLAYER_1 ? '1' : '2'} está sem movimentos válidos (bloqueado)!`
@@ -218,7 +202,7 @@ export default function Tela3({ navigation }) {
     }
   };
 
-  const handleGameOver = (winningPlayer, reason) => {
+  const handleGameOver = (winningPlayer: Player, reason: string) => {
     setWinner(winningPlayer);
     setWinReason(reason);
     setTimerRunning(false);
@@ -226,16 +210,14 @@ export default function Tela3({ navigation }) {
     soundManager.playWin();
   };
 
-  // Verifica se uma casa é destino de movimento válido
-  const getMoveTypeForSquare = (r, c) => {
+  const getMoveTypeForSquare = (r: number, c: number) => {
     const move = validMoves.find(m => m.to.r === r && m.to.c === c);
     if (!move) return null;
     return move.isCapture ? 'capture' : 'move';
   };
 
-  // Todas as capturas globais do jogador da vez para indicar peças que DEVEM capturar
   const globalCaptures = getAllCapturesForPlayer(board, activePlayer);
-  const piecesMustCapture = globalCaptures.map(c => `${c.from.r},${c.from.c}`);
+  const piecesMustCapture = globalCaptures.map(mv => `${mv.from.r},${mv.from.c}`);
 
   return (
     <View style={styles.container}>
@@ -245,7 +227,7 @@ export default function Tela3({ navigation }) {
       <View style={styles.topControlBar}>
         <TouchableOpacity
           style={styles.controlBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={20} color="#f8fafc" />
@@ -293,7 +275,7 @@ export default function Tela3({ navigation }) {
 
       {/* Placar e Indicador de Turno */}
       <View style={styles.scoreboardContainer}>
-        {/* Jogador 2 (Superior) */}
+        {/* Jogador 2 */}
         <View
           style={[
             styles.playerCard,
@@ -336,7 +318,7 @@ export default function Tela3({ navigation }) {
           <Text style={styles.moveCountText}>Mov {moveCount}</Text>
         </View>
 
-        {/* Jogador 1 (Inferior) */}
+        {/* Jogador 1 */}
         <View
           style={[
             styles.playerCard,
@@ -415,7 +397,6 @@ export default function Tela3({ navigation }) {
                     (activePlayer === PLAYER_2 && isPlayer2(piece))) &&
                   piecesMustCapture.includes(`${r},${c}`);
 
-                // Cores da casa
                 let squareBg = isPlayable
                   ? currentTheme.tabuleiro.escura
                   : currentTheme.tabuleiro.clara;
@@ -485,7 +466,6 @@ export default function Tela3({ navigation }) {
                           isMustCapture && styles.mustCapturePiece,
                         ]}
                       >
-                        {/* Anel interno estético da peça */}
                         <View
                           style={[
                             styles.pieceInnerRing,
@@ -497,7 +477,6 @@ export default function Tela3({ navigation }) {
                           ]}
                         />
 
-                        {/* Coroa da Dama */}
                         {isKing(piece) && (
                           <MaterialCommunityIcons
                             name="crown"
@@ -519,14 +498,14 @@ export default function Tela3({ navigation }) {
         </View>
       </View>
 
-      {/* Rodapé Informativo Rápido */}
+      {/* Rodapé Informativo */}
       <View style={styles.footerBar}>
         <Text style={styles.themeInfoText}>
           Tema: <Text style={styles.themeInfoBold}>{currentTheme.nome}</Text>
         </Text>
         <TouchableOpacity
           style={styles.helpLink}
-          onPress={() => navigation.navigate('Tela2')}
+          onPress={() => router.push('/screens/tela2')}
         >
           <Ionicons name="help-circle-outline" size={16} color="#38bdf8" />
           <Text style={styles.helpLinkText}>Regras</Text>
@@ -578,7 +557,6 @@ export default function Tela3({ navigation }) {
                       <Text style={styles.themeDesc}>{theme.descricao}</Text>
                     </View>
 
-                    {/* Preview de Cores */}
                     <View style={styles.themeColorPreview}>
                       <View style={styles.previewBoardSquares}>
                         <View
@@ -641,7 +619,6 @@ export default function Tela3({ navigation }) {
             </Text>
             <Text style={styles.winnerReason}>{winReason}</Text>
 
-            {/* Estatísticas da Partida */}
             <View style={styles.statsSummary}>
               <View style={styles.statSummaryItem}>
                 <Ionicons name="timer" size={16} color="#38bdf8" />
@@ -655,7 +632,6 @@ export default function Tela3({ navigation }) {
               </View>
             </View>
 
-            {/* Botões de Ação */}
             <TouchableOpacity
               style={styles.btnPlayAgain}
               onPress={resetGame}
@@ -669,7 +645,7 @@ export default function Tela3({ navigation }) {
               style={styles.btnExit}
               onPress={() => {
                 setWinnerModalVisible(false);
-                navigation.navigate('Tela1');
+                router.replace('/screens/tela1');
               }}
               activeOpacity={0.8}
             >
@@ -687,7 +663,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f172a',
     alignItems: 'center',
-    paddingTop: 10,
+    paddingTop: 40,
   },
   topControlBar: {
     width: '100%',

@@ -1,6 +1,35 @@
-// temas.js - Templates de cores para o tabuleiro e as peças
+// src/constants/temas.ts - Templates de cores para o tabuleiro e as peças
 
-export const TEMAS = [
+export interface TemaPeca {
+  principal: string;
+  borda: string;
+  sombra: string;
+  anel: string;
+  coroa: string;
+  rotulo: string;
+}
+
+export interface TemaTabuleiro {
+  clara: string;
+  escura: string;
+  borda: string;
+  casaSelecionada: string;
+  movimentoPossivel: string;
+  capturaPossivel: string;
+}
+
+export interface Tema {
+  id: string;
+  nome: string;
+  descricao: string;
+  tabuleiro: TemaTabuleiro;
+  pecas: {
+    p1: TemaPeca;
+    p2: TemaPeca;
+  };
+}
+
+export const TEMAS: Tema[] = [
   {
     id: 'madeira',
     nome: 'Madeira Clássica',

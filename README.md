@@ -14,17 +14,43 @@ Projeto desenvolvido para a disciplina de **Programação para Dispositivos Móv
 
 ---
 
+## 📁 Estrutura de Arquivos no Expo Router (SDK 55)
+
+A aplicação foi organizada dentro de `src/app/screens/`, preservando a estrutura original de rotas do Expo SDK 55 (`src/app/index.tsx`, `src/app/explore.tsx`, `src/app/_layout.tsx`):
+
+```text
+src/
+├── app/
+│   ├── _layout.tsx            # Layout raiz da aplicação
+│   ├── index.tsx              # Tela inicial com atalho para o jogo
+│   ├── explore.tsx            # Tela explore do template Expo
+│   └── screens/               # Telas do Jogo de Dama (Atividade Prática 11)
+│       ├── _layout.tsx        # Stack Navigator das telas do jogo
+│       ├── index.tsx          # Redireciona para /screens/tela1
+│       ├── tela1.tsx          # Tela 1: Boas-Vindas
+│       ├── tela2.tsx          # Tela 2: Instruções do Jogo
+│       ├── tela3.tsx          # Tela 3: O Jogo de Dama interativo
+│       └── tela4.tsx          # Tela 4: Créditos do Projeto
+├── constants/
+│   └── temas.ts               # 4 templates de cores (tabuleiro e peças)
+└── utils/
+    ├── regrasDama.ts          # Lógica oficial do Jogo de Dama
+    └── soundManager.ts        # Áudio Web e vibração tátil
+```
+
+---
+
 ## 📋 Requisitos Atendidos da Atividade
 
-1. **Estrutura de Arquivos e Telas com React Navigation (`tela1.js`, `tela2.js`, `tela3.js`, `tela4.js`):**
-   * `tela1.js` (**Tela 1 - Boas-Vindas**): Apresentação visual atraente, preview do tabuleiro, resumo de recursos e botões de navegação.
-   * `tela2.js` (**Tela 2 - Instruções do Jogo**): Regras oficiais de movimentação, capturas, capturas em cadeia, coroação de dama e dicas estratégicas.
-   * `tela3.js` (**Tela 3 - O Jogo**): Tabuleiro 8x8 interativo e responsivo, placar em tempo real, cronômetro, seletor de temas e modal de vitória.
-   * `tela4.js` (**Tela 4 - Créditos**): Dados do aluno, curso, faculdade, disciplina, orientador e a frase acadêmica obrigatória em destaque:
+1. **Estrutura de Arquivos e Telas (`src/app/screens/`):**
+   * `src/app/screens/tela1.tsx` (**Tela 1 - Boas-Vindas**): Apresentação visual atraente, preview do tabuleiro, resumo de recursos e botões de navegação.
+   * `src/app/screens/tela2.tsx` (**Tela 2 - Instruções do Jogo**): Regras oficiais de movimentação, capturas, capturas em cadeia, coroação de dama e dicas estratégicas.
+   * `src/app/screens/tela3.tsx` (**Tela 3 - O Jogo**): Tabuleiro 8x8 interativo e responsivo, placar em tempo real, cronômetro, seletor de temas e modal de vitória.
+   * `src/app/screens/tela4.tsx` (**Tela 4 - Créditos**): Dados do aluno, curso, faculdade, disciplina, orientador e a frase acadêmica obrigatória em destaque:
      > *"Este site é um projeto acadêmico da FATEC, criado apenas para fins de estudo. Não utilize as informações aqui para uso real."*
-   * `App.js`: Configuração do Stack Navigator com `@react-navigation/native-stack` e `NavigationContainer`.
+   * `src/app/screens/_layout.tsx`: Configuração do Stack Navigator do Expo Router para as telas da atividade.
 
-2. **Templates de Cores para Tabuleiro e Peças (`temas.js`):**
+2. **Templates de Cores para Tabuleiro e Peças (`src/constants/temas.ts`):**
    * Pelo menos 2 cores diferentes para o tabuleiro e peças (foram criados **4 temas completos**):
      * 🌲 **Madeira Clássica:** Tabuleiro tons de marrom/bege; peças mogno e marfim.
      * 🍃 **Floresta Esmeralda:** Tabuleiro estilo torneio verde e branco; peças âmbar e marfim.
@@ -32,7 +58,7 @@ Projeto desenvolvido para a disciplina de **Programação para Dispositivos Móv
      * 🌊 **Oceano Safira:** Tabuleiro safira e azul claro; peças azul marinho e neve.
    * Seletor de temas com modal de pré-visualização instantânea das cores e peças durante a partida.
 
-3. **Mecânica Completa do Jogo de Dama (`regrasDama.js`):**
+3. **Mecânica Completa do Jogo de Dama (`src/utils/regrasDama.ts`):**
    * Tabuleiro 8x8 nas casas escuras.
    * Movimentação diagonal para pedras comuns.
    * Capturas simples e obrigatórias (com destaque visual para peças que devem capturar).
@@ -44,7 +70,7 @@ Projeto desenvolvido para a disciplina de **Programação para Dispositivos Móv
 4. **Recursos Extras Implementados:**
    * 👥 **2 Jogadores Local (*Pass & Play*):** Indicador visual de turno ("Vez do Jogador 1 / Jogador 2").
    * ⏱️ **Cronômetro e Placar:** Tempo decorrido de partida (`MM:SS`), contador de peças restantes, damas e peças capturadas.
-   * 🔊 **Efeitos Sonoros e Vibração (`soundManager.js`):** Sons para movimento, captura, coroação de dama e vitória com controle de Mudo (Mute/Unmute).
+   * 🔊 **Efeitos Sonoros e Vibração (`src/utils/soundManager.ts`):** Sons para movimento, captura, coroação de dama e vitória com controle de Mudo (Mute/Unmute).
    * 🎨 **Ícones Vetoriais:** Utilização da biblioteca compatível `@expo/vector-icons`.
 
 ---
@@ -67,33 +93,6 @@ Projeto desenvolvido para a disciplina de **Programação para Dispositivos Móv
    ```
 
 3. Abra no navegador (pressione `w`), ou no aplicativo **Expo Go** do seu celular lendo o QR Code exibido.
-
----
-
-## 🌐 Como Salvar e Entregar no SnackExpoDev (snack.expo.dev)
-
-Conforme a instrução da atividade:
-> *"O projeto tem que ser criado no React Native, deve ser salvo no SnackExpoDev e salvar o link na tarefa criado no Teams, conforme data limite de entrega."*
-
-Para publicar no Snack:
-1. Acesse **[snack.expo.dev](https://snack.expo.dev)**.
-2. Na árvore de arquivos lateral do Snack, crie/substitua os seguintes arquivos com o conteúdo deste repositório:
-   * `App.js`
-   * `tela1.js`
-   * `tela2.js`
-   * `tela3.js`
-   * `tela4.js`
-   * `regrasDama.js`
-   * `temas.js`
-   * `soundManager.js`
-3. No painel de dependências do Snack (`package.json`), certifique-se de que constam:
-   * `@react-navigation/native`
-   * `@react-navigation/native-stack`
-   * `react-native-safe-area-context`
-   * `react-native-screens`
-   * `@expo/vector-icons`
-4. Clique no botão **Save** no canto superior direito do Snack para gerar o link público.
-5. Copie o link do seu Snack e cole na tarefa correspondente no **Microsoft Teams**.
 
 ---
 
