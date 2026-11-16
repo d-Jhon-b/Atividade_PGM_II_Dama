@@ -344,3 +344,123 @@ export function hasAnyValidMoves(board: PieceType[][], player: Player): boolean 
   }
   return false;
 }
+
+export type BotDifficulty = 'facil' | 'medio' | 'dificil';
+
+// Retorna todos os movimentos válidos disponíveis para um jogador
+export function getAllValidMovesForPlayer(
+  board: PieceType[][],
+  player: Player,
+  forcedPiece: Position | null = null
+): Move[] {
+  if (forcedPiece) {
+    return getCapturesForPiece(board, forcedPiece.r, forcedPiece.c);
+  }
+
+  const allCaptures = getAllCapturesForPlayer(board, player);
+  if (allCaptures.length > 0) {
+    return allCaptures;
+  }
+
+  const simpleMoves: Move[] = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const piece = board[r][c];
+      if (piece && ((player === PLAYER_1 && isPlayer1(piece)) || (player === PLAYER_2 && isPlayer2(piece)))) {
+        simpleMoves.push(...getSimpleMovesForPiece(board, r, c));
+      }
+    }
+  }
+  return simpleMoves;
+}
+
+// Calcula a melhor jogada para o Bot (PLAYER_2) de acordo com a dificuldade
+export function getBestBotMove(
+  board: PieceType[][],
+  difficulty: BotDifficulty = 'medio',
+  forcedPiece: Position | null = null
+): Move | null {
+  const validMoves = getAllValidMovesForPlayer(board, PLAYER_2, forcedPiece);
+  if (validMoves.length === 0) return null;
+  if (validMoves.length === 1) return validMoves[0];
+
+  // Modo Fácil: escolha aleatória entre as jogadas válidas
+  if (difficulty === 'facil') {
+    const randomIndex = Math.floor(Math.random() * validMoves.length);
+    return validMoves[randomIndex];
+  }
+
+  let bestScore = -Infinity;
+  let bestMoves: Move[] = [];
+
+  for (const move of validMoves) {
+    let score = 0;
+    const movingPiece = board[move.from.r][move.from.c];
+    const { newBoard, becameKing, capturedPiece } = executeMove(board, move);
+
+    // 1. Pontuação por captura
+    if (move.isCapture) {
+      score += isKing(capturedPiece) ? 35 : 22;
+
+      // Bônus se permitir captura em cadeia na sequência
+      const nextCaptures = getCapturesForPiece(newBoard, move.to.r, move.to.c);
+      if (nextCaptures.length > 0) {
+        score += 28 * nextCaptures.length;
+      }
+    }
+
+    // 2. Bônus por promoção a Dama
+    if (becameKing) {
+      score += 42;
+    }
+
+    // 3. Posicionamento tático
+    if (!isKing(movingPiece)) {
+      // Incentiva avançar rumo à coroação
+      score += move.to.r * 2.5;
+
+      // Penalidade leve por abrir a linha de defesa (fileira 0) cedo demais
+      if (move.from.r === 0) {
+        score -= 6;
+      }
+    }
+
+    // Controle do centro do tabuleiro (colunas 2 a 5)
+    if (move.to.c >= 2 && move.to.c <= 5) {
+      score += 3;
+    }
+    // Casas laterais (coluna 0 e 7) são seguras contra captura
+    if (move.to.c === 0 || move.to.c === BOARD_SIZE - 1) {
+      score += 4;
+    }
+
+    // 4. No modo Difícil: simula a resposta imediata do Jogador 1 (Lookahead)
+    if (difficulty === 'dificil') {
+      const opponentCaptures = getAllCapturesForPlayer(newBoard, PLAYER_1);
+      if (opponentCaptures.length > 0) {
+        // Verifica se a peça movida ou uma dama nossa seria capturada
+        let maxLoss = 0;
+        for (const oppCap of opponentCaptures) {
+          const victim = oppCap.captured ? newBoard[oppCap.captured.r][oppCap.captured.c] : null;
+          const loss = isKing(victim) ? 38 : 24;
+          if (loss > maxLoss) maxLoss = loss;
+        }
+        score -= maxLoss;
+      } else {
+        score += 8; // Posição segura sem contra-ataque imediato
+      }
+    }
+
+    // Pequeno fator de desempate para variar partidas
+    score += Math.random() * 1.5;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (Math.abs(score - bestScore) < 0.5) {
+      bestMoves.push(move);
+    }
+  }
+
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}

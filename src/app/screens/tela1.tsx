@@ -66,12 +66,16 @@ export default function Tela1Screen() {
             </View>
           </View>
           <Text style={styles.previewCaption}>
-            Modo 2 Jogadores • Captura em Cadeia • Temas Personalizáveis
+            Modo Offline vs Bot • 2 Jogadores • Temas Personalizáveis
           </Text>
         </View>
 
         {/* Recursos em Destaque */}
         <View style={styles.featuresRow}>
+          <View style={styles.featureItem}>
+            <MaterialCommunityIcons name="robot" size={20} color="#10b981" />
+            <Text style={styles.featureLabel}>Vs Bot IA</Text>
+          </View>
           <View style={styles.featureItem}>
             <Ionicons name="people" size={20} color="#38bdf8" />
             <Text style={styles.featureLabel}>2 Jogadores</Text>
@@ -81,28 +85,39 @@ export default function Tela1Screen() {
             <Text style={styles.featureLabel}>4 Temas</Text>
           </View>
           <View style={styles.featureItem}>
-            <Ionicons name="timer" size={20} color="#10b981" />
-            <Text style={styles.featureLabel}>Tempo & Placar</Text>
-          </View>
-          <View style={styles.featureItem}>
             <Ionicons name="volume-high" size={20} color="#f59e0b" />
-            <Text style={styles.featureLabel}>Efeitos Sonoros</Text>
+            <Text style={styles.featureLabel}>Tempo & Som</Text>
           </View>
         </View>
 
         {/* Menu de Ações Principais com Expo Router */}
         <View style={styles.menuContainer}>
           <TouchableOpacity
-            style={styles.btnPrimary}
+            style={styles.btnBot}
             activeOpacity={0.85}
-            onPress={() => router.push('/screens/tela3')}
+            onPress={() => router.push({ pathname: '/screens/tela3', params: { mode: 'bot' } })}
           >
             <View style={styles.btnIconWrapper}>
-              <Ionicons name="play" size={22} color="#ffffff" />
+              <MaterialCommunityIcons name="robot-excited" size={22} color="#ffffff" />
             </View>
             <View style={styles.btnTextWrapper}>
-              <Text style={styles.btnPrimaryTitle}>JOGAR AGORA</Text>
-              <Text style={styles.btnPrimarySubtitle}>Iniciar partida para 2 jogadores</Text>
+              <Text style={styles.btnPrimaryTitle}>MODO OFFLINE (VS BOT)</Text>
+              <Text style={styles.btnPrimarySubtitle}>Desafie a Inteligência Artificial (3 níveis)</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ffffff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            activeOpacity={0.85}
+            onPress={() => router.push({ pathname: '/screens/tela3', params: { mode: 'pvp' } })}
+          >
+            <View style={styles.btnIconWrapper}>
+              <Ionicons name="people" size={22} color="#ffffff" />
+            </View>
+            <View style={styles.btnTextWrapper}>
+              <Text style={styles.btnPrimaryTitle}>DOIS JOGADORES (LOCAL)</Text>
+              <Text style={styles.btnPrimarySubtitle}>Partida Pass & Play no mesmo aparelho</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#ffffff" />
           </TouchableOpacity>
@@ -281,6 +296,18 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: '100%',
     gap: 12,
+  },
+  btnBot: {
+    backgroundColor: '#10b981',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#10b981',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
   },
   btnPrimary: {
     backgroundColor: '#f59e0b',

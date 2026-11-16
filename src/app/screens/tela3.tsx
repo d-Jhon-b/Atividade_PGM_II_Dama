@@ -1,5 +1,5 @@
-// src/app/screens/tela3.tsx - Tela 3: O Jogo de Dama
-import React, { useState, useEffect } from 'react';
+// src/app/screens/tela3.tsx - Tela 3: O Jogo de Dama (2 Jogadores & Modo Offline vs Bot)
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,7 +11,7 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 import {
@@ -22,6 +22,7 @@ import {
   PieceType,
   Position,
   Move,
+  BotDifficulty,
   isPlayableSquare,
   isPlayer1,
   isPlayer2,
@@ -33,6 +34,7 @@ import {
   executeMove,
   countPieces,
   hasAnyValidMoves,
+  getBestBotMove,
 } from '@/utils/regrasDama';
 
 import { TEMAS } from '@/constants/temas';
@@ -43,7 +45,18 @@ const BOARD_CONTAINER_PADDING = 16;
 const BOARD_WIDTH = Math.min(SCREEN_WIDTH - BOARD_CONTAINER_PADDING * 2, 380);
 const SQUARE_SIZE = Math.floor(BOARD_WIDTH / BOARD_SIZE);
 
+export type GameMode = 'pvp' | 'bot';
+
 export default function Tela3Screen() {
+  const params = useLocalSearchParams<{ mode?: string }>();
+
+  // Modo de jogo e dificuldade do Bot
+  const [gameMode, setGameMode] = useState<GameMode>(
+    params.mode === 'bot' ? 'bot' : 'pvp'
+  );
+  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>('medio');
+  const [isBotThinking, setIsBotThinking] = useState<boolean>(false);
+
   // Estado do jogo
   const [board, setBoard] = useState<PieceType[][]>(createInitialBoard);
   const [activePlayer, setActivePlayer] = useState<Player>(PLAYER_1);
@@ -70,6 +83,13 @@ export default function Tela3Screen() {
   // Contador de peças
   const pieceCounts = countPieces(board);
 
+  // Sincroniza modo inicial caso venha via parâmetro
+  useEffect(() => {
+    if (params.mode === 'bot' || params.mode === 'pvp') {
+      setGameMode(params.mode);
+    }
+  }, [params.mode]);
+
   // Timer Effect
   useEffect(() => {
     let interval: any = null;
@@ -80,6 +100,105 @@ export default function Tela3Screen() {
     }
     return () => clearInterval(interval);
   }, [timerRunning]);
+
+  const handleGameOver = useCallback((winningPlayer: Player, reason: string) => {
+    setWinner(winningPlayer);
+    setWinReason(reason);
+    setTimerRunning(false);
+    setIsBotThinking(false);
+    setWinnerModalVisible(true);
+    soundManager.playWin();
+  }, []);
+
+  const checkGameOver = useCallback(
+    (currentBoard: PieceType[][], nextPlayer: Player) => {
+      const counts = countPieces(currentBoard);
+
+      if (nextPlayer === PLAYER_1 && counts.p1Total === 0) {
+        handleGameOver(
+          PLAYER_2,
+          gameMode === 'bot'
+            ? 'O Bot capturou todas as suas peças!'
+            : 'Todas as peças do Jogador 1 foram capturadas!'
+        );
+        return true;
+      }
+      if (nextPlayer === PLAYER_2 && counts.p2Total === 0) {
+        handleGameOver(
+          PLAYER_1,
+          gameMode === 'bot'
+            ? 'Você capturou todas as peças do Bot!'
+            : 'Todas as peças do Jogador 2 foram capturadas!'
+        );
+        return true;
+      }
+
+      if (!hasAnyValidMoves(currentBoard, nextPlayer)) {
+        const winningPlayer: Player = nextPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
+        const blockedLabel =
+          gameMode === 'bot'
+            ? nextPlayer === PLAYER_1
+              ? 'Você ficou sem movimentos válidos!'
+              : 'O Bot ficou sem movimentos válidos (bloqueado)!'
+            : `O Jogador ${nextPlayer === PLAYER_1 ? '1' : '2'} está sem movimentos válidos (bloqueado)!`;
+        handleGameOver(winningPlayer, blockedLabel);
+        return true;
+      }
+      return false;
+    },
+    [gameMode, handleGameOver]
+  );
+
+  // Turno automático do Bot (Modo Offline vs Bot)
+  useEffect(() => {
+    if (gameMode !== 'bot' || winner || activePlayer !== PLAYER_2) {
+      setIsBotThinking(false);
+      return;
+    }
+
+    setIsBotThinking(true);
+    const timer = setTimeout(() => {
+      const botMove = getBestBotMove(board, botDifficulty, forcedPiece);
+
+      if (!botMove) {
+        checkGameOver(board, PLAYER_2);
+        setIsBotThinking(false);
+        return;
+      }
+
+      const { newBoard, becameKing } = executeMove(board, botMove);
+      setBoard(newBoard);
+      setMoveCount(prev => prev + 1);
+
+      if (botMove.isCapture) {
+        soundManager.playCapture();
+
+        const nextCaptures = getCapturesForPiece(newBoard, botMove.to.r, botMove.to.c);
+        if (nextCaptures.length > 0) {
+          // Continua a cadeia de capturas do Bot no próximo ciclo
+          setForcedPiece({ r: botMove.to.r, c: botMove.to.c });
+          setSelectedSquare({ r: botMove.to.r, c: botMove.to.c });
+          return;
+        }
+      } else {
+        soundManager.playMove();
+      }
+
+      if (becameKing) {
+        soundManager.playKing();
+      }
+
+      setSelectedSquare(null);
+      setValidMoves([]);
+      setForcedPiece(null);
+      setIsBotThinking(false);
+      setActivePlayer(PLAYER_1);
+
+      checkGameOver(newBoard, PLAYER_1);
+    }, 550);
+
+    return () => clearTimeout(timer);
+  }, [gameMode, winner, activePlayer, board, botDifficulty, forcedPiece, checkGameOver]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -92,12 +211,16 @@ export default function Tela3Screen() {
     setIsMuted(muted);
   };
 
-  const resetGame = () => {
+  const resetGame = (newMode?: GameMode) => {
+    if (newMode) {
+      setGameMode(newMode);
+    }
     setBoard(createInitialBoard());
     setActivePlayer(PLAYER_1);
     setSelectedSquare(null);
     setValidMoves([]);
     setForcedPiece(null);
+    setIsBotThinking(false);
     setMoveCount(0);
     setSecondsElapsed(0);
     setTimerRunning(true);
@@ -113,13 +236,22 @@ export default function Tela3Screen() {
       'Tem certeza de que deseja recomeçar a partida atual?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Reiniciar', style: 'destructive', onPress: resetGame },
+        { text: 'Reiniciar', style: 'destructive', onPress: () => resetGame() },
       ]
     );
   };
 
+  const handleSwitchMode = (targetMode: GameMode) => {
+    if (targetMode === gameMode) return;
+    resetGame(targetMode);
+  };
+
   const handleSquarePress = (r: number, c: number) => {
     if (winner) return;
+    // Bloqueia toque humano durante a vez do Bot
+    if (gameMode === 'bot' && (activePlayer === PLAYER_2 || isBotThinking)) {
+      return;
+    }
 
     const clickedPiece = board[r][c];
     const targetMove = validMoves.find(m => m.to.r === r && m.to.c === c);
@@ -179,35 +311,6 @@ export default function Tela3Screen() {
         setValidMoves([]);
       }
     }
-  };
-
-  const checkGameOver = (currentBoard: PieceType[][], nextPlayer: Player) => {
-    const counts = countPieces(currentBoard);
-
-    if (nextPlayer === PLAYER_1 && counts.p1Total === 0) {
-      handleGameOver(PLAYER_2, 'Todas as peças do Jogador 1 foram capturadas!');
-      return;
-    }
-    if (nextPlayer === PLAYER_2 && counts.p2Total === 0) {
-      handleGameOver(PLAYER_1, 'Todas as peças do Jogador 2 foram capturadas!');
-      return;
-    }
-
-    if (!hasAnyValidMoves(currentBoard, nextPlayer)) {
-      const winningPlayer: Player = nextPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
-      handleGameOver(
-        winningPlayer,
-        `O Jogador ${nextPlayer === PLAYER_1 ? '1' : '2'} está sem movimentos válidos (bloqueado)!`
-      );
-    }
-  };
-
-  const handleGameOver = (winningPlayer: Player, reason: string) => {
-    setWinner(winningPlayer);
-    setWinReason(reason);
-    setTimerRunning(false);
-    setWinnerModalVisible(true);
-    soundManager.playWin();
   };
 
   const getMoveTypeForSquare = (r: number, c: number) => {
@@ -273,9 +376,93 @@ export default function Tela3Screen() {
         </View>
       </View>
 
+      {/* Seletor de Modo de Jogo e Dificuldade do Bot */}
+      <View style={styles.modeSelectorRow}>
+        <View style={styles.modeSwitchGroup}>
+          <TouchableOpacity
+            style={[
+              styles.modePill,
+              gameMode === 'bot' && styles.modePillActiveBot,
+            ]}
+            onPress={() => handleSwitchMode('bot')}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons
+              name="robot"
+              size={14}
+              color={gameMode === 'bot' ? '#ffffff' : '#94a3b8'}
+            />
+            <Text
+              style={[
+                styles.modePillText,
+                gameMode === 'bot' && styles.modePillTextActive,
+              ]}
+            >
+              Vs Bot
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modePill,
+              gameMode === 'pvp' && styles.modePillActivePvp,
+            ]}
+            onPress={() => handleSwitchMode('pvp')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="people"
+              size={14}
+              color={gameMode === 'pvp' ? '#ffffff' : '#94a3b8'}
+            />
+            <Text
+              style={[
+                styles.modePillText,
+                gameMode === 'pvp' && styles.modePillTextActive,
+              ]}
+            >
+              2 Jogadores
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {gameMode === 'bot' && (
+          <View style={styles.difficultyGroup}>
+            {(['facil', 'medio', 'dificil'] as BotDifficulty[]).map(level => {
+              const label =
+                level === 'facil' ? 'Fácil' : level === 'medio' ? 'Médio' : 'Difícil';
+              const isSelected = botDifficulty === level;
+              return (
+                <TouchableOpacity
+                  key={level}
+                  style={[
+                    styles.diffChip,
+                    isSelected && styles.diffChipSelected,
+                  ]}
+                  onPress={() => {
+                    setBotDifficulty(level);
+                    soundManager.playClick();
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.diffChipText,
+                      isSelected && styles.diffChipTextSelected,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
       {/* Placar e Indicador de Turno */}
       <View style={styles.scoreboardContainer}>
-        {/* Jogador 2 */}
+        {/* Jogador 2 ou Bot IA */}
         <View
           style={[
             styles.playerCard,
@@ -292,10 +479,19 @@ export default function Tela3Screen() {
                 },
               ]}
             />
-            <Text style={styles.playerName}>Jogador 2</Text>
+            <Text style={styles.playerName} numberOfLines={1}>
+              {gameMode === 'bot' ? 'Bot IA' : 'Jogador 2'}
+            </Text>
             {activePlayer === PLAYER_2 && (
-              <View style={styles.turnBadge}>
-                <Text style={styles.turnBadgeText}>VEZ</Text>
+              <View
+                style={[
+                  styles.turnBadge,
+                  gameMode === 'bot' && { backgroundColor: '#10b981' },
+                ]}
+              >
+                <Text style={styles.turnBadgeText}>
+                  {gameMode === 'bot' ? 'BOT' : 'VEZ'}
+                </Text>
               </View>
             )}
           </View>
@@ -307,7 +503,7 @@ export default function Tela3Screen() {
               Damas: <Text style={styles.statBold}>{pieceCounts.p2Kings}</Text>
             </Text>
             <Text style={styles.playerStatText}>
-              Capturadas: <Text style={styles.statBold}>{pieceCounts.p2Captured}</Text>
+              Capt.: <Text style={styles.statBold}>{pieceCounts.p2Captured}</Text>
             </Text>
           </View>
         </View>
@@ -335,7 +531,9 @@ export default function Tela3Screen() {
                 },
               ]}
             />
-            <Text style={styles.playerName}>Jogador 1</Text>
+            <Text style={styles.playerName} numberOfLines={1}>
+              {gameMode === 'bot' ? 'Você (J1)' : 'Jogador 1'}
+            </Text>
             {activePlayer === PLAYER_1 && (
               <View style={styles.turnBadge}>
                 <Text style={styles.turnBadgeText}>VEZ</Text>
@@ -350,14 +548,21 @@ export default function Tela3Screen() {
               Damas: <Text style={styles.statBold}>{pieceCounts.p1Kings}</Text>
             </Text>
             <Text style={styles.playerStatText}>
-              Capturadas: <Text style={styles.statBold}>{pieceCounts.p1Captured}</Text>
+              Capt.: <Text style={styles.statBold}>{pieceCounts.p1Captured}</Text>
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Alerta de Captura Obrigatória ou Cadeia */}
-      {forcedPiece ? (
+      {/* Banner de Status: Bot Pensando, Captura Contínua ou Obrigatória */}
+      {isBotThinking ? (
+        <View style={styles.botThinkingBanner}>
+          <MaterialCommunityIcons name="robot-excited-outline" size={16} color="#10b981" />
+          <Text style={styles.botThinkingText}>
+            O Bot está calculando a jogada...
+          </Text>
+        </View>
+      ) : forcedPiece ? (
         <View style={styles.forcedBanner}>
           <MaterialCommunityIcons name="lightning-bolt" size={16} color="#fbbf24" />
           <Text style={styles.forcedBannerText}>
@@ -611,11 +816,27 @@ export default function Tela3Screen() {
         <View style={styles.modalOverlay}>
           <View style={styles.winnerCard}>
             <View style={styles.winnerTrophy}>
-              <MaterialCommunityIcons name="trophy-award" size={56} color="#f59e0b" />
+              <MaterialCommunityIcons
+                name={
+                  gameMode === 'bot' && winner === PLAYER_2
+                    ? 'robot-happy'
+                    : 'trophy-award'
+                }
+                size={56}
+                color="#f59e0b"
+              />
             </View>
-            <Text style={styles.winnerText}>VITÓRIA!</Text>
+            <Text style={styles.winnerText}>
+              {gameMode === 'bot' && winner === PLAYER_2 ? 'FIM DE JOGO!' : 'VITÓRIA!'}
+            </Text>
             <Text style={styles.winnerPlayerName}>
-              {winner === PLAYER_1 ? 'Jogador 1 Venceu!' : 'Jogador 2 Venceu!'}
+              {gameMode === 'bot'
+                ? winner === PLAYER_1
+                  ? 'Você Venceu o Bot!'
+                  : 'O Bot Venceu!'
+                : winner === PLAYER_1
+                  ? 'Jogador 1 Venceu!'
+                  : 'Jogador 2 Venceu!'}
             </Text>
             <Text style={styles.winnerReason}>{winReason}</Text>
 
@@ -634,7 +855,7 @@ export default function Tela3Screen() {
 
             <TouchableOpacity
               style={styles.btnPlayAgain}
-              onPress={resetGame}
+              onPress={() => resetGame()}
               activeOpacity={0.85}
             >
               <Ionicons name="refresh" size={18} color="#ffffff" style={{ marginRight: 6 }} />
@@ -663,7 +884,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f172a',
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 36,
   },
   topControlBar: {
     width: '100%',
@@ -704,13 +925,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  scoreboardContainer: {
+  modeSelectorRow: {
     width: '100%',
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+    gap: 8,
+  },
+  modeSwitchGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  modePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  modePillActiveBot: {
+    backgroundColor: '#10b981',
+  },
+  modePillActivePvp: {
+    backgroundColor: '#0284c7',
+  },
+  modePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+  },
+  modePillTextActive: {
+    color: '#ffffff',
+  },
+  difficultyGroup: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  diffChip: {
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  diffChipSelected: {
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  diffChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  diffChipTextSelected: {
+    color: '#10b981',
+    fontWeight: '800',
+  },
+  scoreboardContainer: {
+    width: '100%',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   playerCard: {
     flex: 1,
@@ -781,6 +1066,23 @@ const styles = StyleSheet.create({
   moveCountText: {
     fontSize: 9,
     color: '#94a3b8',
+  },
+  botThinkingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  botThinkingText: {
+    fontSize: 11,
+    color: '#10b981',
+    fontWeight: '700',
+    marginLeft: 6,
   },
   forcedBanner: {
     flexDirection: 'row',
@@ -879,7 +1181,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   themeInfoText: {
     fontSize: 12,
