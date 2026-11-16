@@ -11,7 +11,6 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 import {
@@ -35,10 +34,10 @@ import {
   countPieces,
   hasAnyValidMoves,
   getBestBotMove,
-} from '@/utils/regrasDama';
+} from '../../utils/regrasDama';
 
-import { TEMAS } from '@/constants/temas';
-import { soundManager } from '@/utils/soundManager';
+import { TEMAS } from '../../constants/temas';
+import { soundManager } from '../../utils/soundManager';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BOARD_CONTAINER_PADDING = 16;
@@ -47,12 +46,12 @@ const SQUARE_SIZE = Math.floor(BOARD_WIDTH / BOARD_SIZE);
 
 export type GameMode = 'pvp' | 'bot';
 
-export default function Tela3Screen() {
-  const params = useLocalSearchParams<{ mode?: string }>();
+export default function Tela3Screen({ navigation, route }: any) {
+  const modeParam = route?.params?.mode;
 
   // Modo de jogo e dificuldade do Bot
   const [gameMode, setGameMode] = useState<GameMode>(
-    params.mode === 'bot' ? 'bot' : 'pvp'
+    modeParam === 'bot' ? 'bot' : 'pvp'
   );
   const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>('medio');
   const [isBotThinking, setIsBotThinking] = useState<boolean>(false);
@@ -85,10 +84,10 @@ export default function Tela3Screen() {
 
   // Sincroniza modo inicial caso venha via parâmetro
   useEffect(() => {
-    if (params.mode === 'bot' || params.mode === 'pvp') {
-      setGameMode(params.mode);
+    if (modeParam === 'bot' || modeParam === 'pvp') {
+      setGameMode(modeParam);
     }
-  }, [params.mode]);
+  }, [modeParam]);
 
   // Timer Effect
   useEffect(() => {
@@ -330,7 +329,7 @@ export default function Tela3Screen() {
       <View style={styles.topControlBar}>
         <TouchableOpacity
           style={styles.controlBtn}
-          onPress={() => router.back()}
+          onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={20} color="#f8fafc" />
@@ -710,7 +709,7 @@ export default function Tela3Screen() {
         </Text>
         <TouchableOpacity
           style={styles.helpLink}
-          onPress={() => router.push('/screens/tela2')}
+          onPress={() => navigation.navigate('Tela2')}
         >
           <Ionicons name="help-circle-outline" size={16} color="#38bdf8" />
           <Text style={styles.helpLinkText}>Regras</Text>
@@ -866,7 +865,7 @@ export default function Tela3Screen() {
               style={styles.btnExit}
               onPress={() => {
                 setWinnerModalVisible(false);
-                router.replace('/screens/tela1');
+                navigation.navigate('Tela1');
               }}
               activeOpacity={0.8}
             >

@@ -8,10 +8,9 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function Tela4Screen() {
+export default function Tela4Screen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -137,7 +136,7 @@ export default function Tela4Screen() {
           <TouchableOpacity
             style={styles.btnPlay}
             activeOpacity={0.85}
-            onPress={() => router.push('/screens/tela3')}
+            onPress={() => navigation.navigate('Tela3', { mode: 'bot' })}
           >
             <Ionicons name="play" size={20} color="#ffffff" style={{ marginRight: 8 }} />
             <Text style={styles.btnPlayText}>IR PARA O JOGO DE DAMA</Text>
@@ -146,7 +145,7 @@ export default function Tela4Screen() {
           <TouchableOpacity
             style={styles.btnHome}
             activeOpacity={0.8}
-            onPress={() => router.push('/screens/tela1')}
+            onPress={() => navigation.navigate('Tela1')}
           >
             <Ionicons name="home-outline" size={18} color="#94a3b8" style={{ marginRight: 6 }} />
             <Text style={styles.btnHomeText}>Voltar à Página Inicial</Text>

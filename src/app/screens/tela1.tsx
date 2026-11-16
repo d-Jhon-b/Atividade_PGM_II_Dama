@@ -8,10 +8,9 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { router } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
-export default function Tela1Screen() {
+export default function Tela1Screen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -90,12 +89,12 @@ export default function Tela1Screen() {
           </View>
         </View>
 
-        {/* Menu de Ações Principais com Expo Router */}
+        {/* Menu de Ações Principais */}
         <View style={styles.menuContainer}>
           <TouchableOpacity
             style={styles.btnBot}
             activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/screens/tela3', params: { mode: 'bot' } })}
+            onPress={() => navigation.navigate('Tela3', { mode: 'bot' })}
           >
             <View style={styles.btnIconWrapper}>
               <MaterialCommunityIcons name="robot-excited" size={22} color="#ffffff" />
@@ -110,7 +109,7 @@ export default function Tela1Screen() {
           <TouchableOpacity
             style={styles.btnPrimary}
             activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/screens/tela3', params: { mode: 'pvp' } })}
+            onPress={() => navigation.navigate('Tela3', { mode: 'pvp' })}
           >
             <View style={styles.btnIconWrapper}>
               <Ionicons name="people" size={22} color="#ffffff" />
@@ -125,7 +124,7 @@ export default function Tela1Screen() {
           <TouchableOpacity
             style={styles.btnSecondary}
             activeOpacity={0.8}
-            onPress={() => router.push('/screens/tela2')}
+            onPress={() => navigation.navigate('Tela2')}
           >
             <Ionicons name="book-outline" size={20} color="#38bdf8" style={styles.btnSecondaryIcon} />
             <Text style={styles.btnSecondaryText}>Instruções e Regras</Text>
@@ -135,7 +134,7 @@ export default function Tela1Screen() {
           <TouchableOpacity
             style={styles.btnSecondary}
             activeOpacity={0.8}
-            onPress={() => router.push('/screens/tela4')}
+            onPress={() => navigation.navigate('Tela4')}
           >
             <Ionicons name="information-circle-outline" size={20} color="#a855f7" style={styles.btnSecondaryIcon} />
             <Text style={styles.btnSecondaryText}>Créditos do Projeto</Text>

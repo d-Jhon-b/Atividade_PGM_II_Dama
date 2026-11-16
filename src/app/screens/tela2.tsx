@@ -8,10 +8,9 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { router } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
-export default function Tela2Screen() {
+export default function Tela2Screen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
@@ -106,7 +105,7 @@ export default function Tela2Screen() {
         <TouchableOpacity
           style={styles.btnStart}
           activeOpacity={0.85}
-          onPress={() => router.push('/screens/tela3')}
+          onPress={() => navigation.navigate('Tela3', { mode: 'bot' })}
         >
           <Ionicons name="game-controller" size={22} color="#ffffff" style={styles.btnStartIcon} />
           <Text style={styles.btnStartText}>ENTENDI, IR PARA O JOGO!</Text>
@@ -115,7 +114,7 @@ export default function Tela2Screen() {
         <TouchableOpacity
           style={styles.btnBack}
           activeOpacity={0.8}
-          onPress={() => router.back()}
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={18} color="#94a3b8" />
           <Text style={styles.btnBackText}>Voltar</Text>
